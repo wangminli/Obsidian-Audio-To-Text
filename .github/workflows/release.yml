@@ -6,6 +6,8 @@ on:
       - "*.*.*"
 
 permissions:
+  id-token: write
+  attestations: write
   contents: write
 
 jobs:
@@ -53,6 +55,14 @@ jobs:
             "" \
             "The default transcription model is qwen3-asr-flash-filetrans. See README.md for setup and privacy details." \
             > release-notes.md
+
+      - name: Attest release assets
+        uses: actions/attest-build-provenance@v3
+        with:
+          subject-path: |
+            main.js
+            manifest.json
+            Audio-to-Text-${{ steps.metadata.outputs.version }}.zip
 
       - name: Publish GitHub release
         env:

@@ -1,12 +1,10 @@
 {
   "id": "audio-to-text",
   "name": "Audio to Text",
-  "version": "0.4.2",
+  "version": "0.4.3",
   "minAppVersion": "1.5.0",
-  "description": "Transcribe audio embeds in Obsidian with configurable speech-to-text services.",
+  "description": "Transcribe audio embeds with configurable speech-to-text services.",
   "author": "wangminli",
   "isDesktopOnly": false,
-  "fundingUrl": "",
-  "authorUrl": "https://github.com/wangminli",
-  "main": "main.js"
+  "authorUrl": "https://github.com/wangminli"
 }

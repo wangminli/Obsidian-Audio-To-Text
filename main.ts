@@ -10,7 +10,7 @@ import {
   TFile,
   requestUrl
 } from "obsidian";
-import type { MarkdownFileInfo } from "obsidian";
+import type { MarkdownFileInfo, SettingDefinitionItem } from "obsidian";
 
 interface QwenAsrSettings {
   apiKey: string;
@@ -21,12 +21,15 @@ interface QwenAsrSettings {
   autoTranscribe: boolean;
 }
 
+type QwenAsrSettingKey = keyof QwenAsrSettings;
+
 const DEFAULT_ENDPOINT = "https://dashscope.aliyuncs.com/api/v1/services/audio/asr/transcription";
 const DEFAULT_MODEL = "qwen3-asr-flash-filetrans";
 const LITTERBOX_ENDPOINT = "https://litterbox.catbox.moe/resources/internals/api.php";
 const DEFAULT_LITTERBOX_RETENTION = "24h";
 const POLL_INTERVAL_MS = 2500;
 const POLL_TIMEOUT_MS = 30 * 60 * 1000;
+const VALID_LITTERBOX_RETENTIONS = new Set<string>(["1h", "12h", "24h", "72h"]);
 
 const DEFAULT_SETTINGS: QwenAsrSettings = {
   apiKey: "",
@@ -121,20 +124,6 @@ export default class QwenAsrPlugin extends Plugin {
       })
     );
     this.registerEvent(
-      this.app.workspace.on("editor-paste", (_event, editor, info) => {
-        const sourceFile = info.file ?? this.app.workspace.getActiveViewOfType(MarkdownView)?.file;
-        if (!this.settings.autoTranscribe || !sourceFile) return;
-        this.scheduleAutoTranscriptionScan(editor, sourceFile, 250);
-      })
-    );
-    this.registerEvent(
-      this.app.workspace.on("editor-drop", (_event, editor, info) => {
-        const sourceFile = info.file ?? this.app.workspace.getActiveViewOfType(MarkdownView)?.file;
-        if (!this.settings.autoTranscribe || !sourceFile) return;
-        this.scheduleAutoTranscriptionScan(editor, sourceFile, 250);
-      })
-    );
-    this.registerEvent(
       this.app.vault.on("modify", (file) => {
         if (!this.settings.autoTranscribe || !(file instanceof TFile) || file.extension.toLowerCase() !== "md") return;
         const view = this.app.workspace.getActiveViewOfType(MarkdownView);
@@ -190,7 +179,7 @@ export default class QwenAsrPlugin extends Plugin {
     if (!this.settings.model || this.settings.model === "qwen3-asr-flash") {
       this.settings.model = DEFAULT_MODEL;
     }
-    if (!["1h", "12h", "24h", "72h"].includes(this.settings.litterboxRetention)) {
+    if (!VALID_LITTERBOX_RETENTIONS.has(this.settings.litterboxRetention)) {
       this.settings.litterboxRetention = DEFAULT_LITTERBOX_RETENTION;
     }
     this.settings.autoTranscribe = Boolean(this.settings.autoTranscribe);
@@ -284,19 +273,13 @@ export default class QwenAsrPlugin extends Plugin {
       return { reference: { linkPath, file: metadataFile }, line };
     }
 
-    // A freshly pasted wikilink may arrive before metadataCache has indexed it.
-    // Resolve exact paths and unique basename matches directly from the Vault.
+    // A freshly inserted wikilink may arrive before metadataCache has indexed it.
     const normalizedPath = linkPath.replace(/^\/+/, "");
     const directFile = this.app.vault.getAbstractFileByPath(normalizedPath);
     if (directFile instanceof TFile && isAudioFile(directFile)) {
       return { reference: { linkPath, file: directFile }, line };
     }
-
-    const matches = this.app.vault.getFiles().filter((file) =>
-      isAudioFile(file) && (file.path === normalizedPath || file.path.endsWith(`/${normalizedPath}`) || file.name === normalizedPath)
-    );
-    if (matches.length !== 1) return null;
-    return { reference: { linkPath, file: matches[0] }, line };
+    return null;
   }
 
   private queueAutoTranscription(target: SelectionTarget, editor: Editor, sourceFile: TFile): void {
@@ -483,10 +466,107 @@ class QwenAsrSettingTab extends PluginSettingTab {
     this.plugin = plugin;
   }
 
+  getSettingDefinitions(): SettingDefinitionItem<QwenAsrSettingKey>[] {
+    return [
+      {
+        type: "group",
+        heading: "转写服务",
+        items: [
+          {
+            name: "转写服务 API Key",
+            desc: "用于访问当前配置的语音转写服务。",
+            render: (setting) => {
+              setting.addText((text) => {
+                text.setPlaceholder("sk-...").setValue(this.plugin.settings.apiKey);
+                text.inputEl.type = "password";
+                text.onChange(async (value) => {
+                  this.plugin.settings.apiKey = value.trim();
+                  await this.plugin.saveSettings();
+                });
+              });
+            }
+          },
+          {
+            name: "模型",
+            desc: "当前转写服务支持的模型名称。",
+            control: { type: "text", key: "model", defaultValue: DEFAULT_MODEL, placeholder: DEFAULT_MODEL }
+          },
+          {
+            name: "接口地址",
+            desc: "当前转写服务的接口地址。",
+            control: { type: "text", key: "endpoint", defaultValue: DEFAULT_ENDPOINT, placeholder: DEFAULT_ENDPOINT }
+          },
+          {
+            name: "语言（可选）",
+            desc: "例如 zh、en；留空时由模型自动识别。",
+            control: { type: "text", key: "language", defaultValue: "", placeholder: "自动识别" }
+          },
+          {
+            name: "自动转文字",
+            desc: "开启后，在编辑器中输入或粘贴音频引用时自动开始转写。",
+            control: { type: "toggle", key: "autoTranscribe", defaultValue: false }
+          }
+        ]
+      },
+      {
+        type: "group",
+        heading: "临时文件上传",
+        items: [
+          {
+            name: "临时文件保留时间",
+            desc: "建议选择 24 小时，给异步转写任务留出排队时间。",
+            control: {
+              type: "dropdown",
+              key: "litterboxRetention",
+              defaultValue: DEFAULT_LITTERBOX_RETENTION,
+              options: { "1h": "1 小时", "12h": "12 小时", "24h": "24 小时", "72h": "3 天" }
+            }
+          },
+          {
+            name: "隐私提示",
+            desc: "Litterbox 是第三方临时文件服务；拿到下载链接的人可以访问音频，请勿上传高度敏感或受监管内容。文件会按所选时间自动过期。"
+          }
+        ]
+      }
+    ];
+  }
+
+  getControlValue(key: string): unknown {
+    return this.plugin.settings[key as QwenAsrSettingKey];
+  }
+
+  async setControlValue(key: string, value: unknown): Promise<void> {
+    switch (key as QwenAsrSettingKey) {
+      case "model":
+        this.plugin.settings.model = typeof value === "string" && value.trim() ? value.trim() : DEFAULT_MODEL;
+        break;
+      case "endpoint":
+        this.plugin.settings.endpoint = typeof value === "string" && value.trim() ? value.trim() : DEFAULT_ENDPOINT;
+        break;
+      case "language":
+        this.plugin.settings.language = typeof value === "string" ? value.trim() : "";
+        break;
+      case "litterboxRetention":
+        this.plugin.settings.litterboxRetention =
+          typeof value === "string" && VALID_LITTERBOX_RETENTIONS.has(value) ? value : DEFAULT_LITTERBOX_RETENTION;
+        break;
+      case "autoTranscribe":
+        this.plugin.settings.autoTranscribe = value === true;
+        break;
+      case "apiKey":
+        this.plugin.settings.apiKey = typeof value === "string" ? value.trim() : "";
+        break;
+    }
+    await this.plugin.saveSettings();
+    if (key === "autoTranscribe" && this.plugin.settings.autoTranscribe) {
+      this.plugin.scheduleActiveViewAutoTranscription();
+    }
+  }
+
   display(): void {
     const { containerEl } = this;
     containerEl.empty();
-    containerEl.createEl("h2", { text: "Audio to Text" });
+    new Setting(containerEl).setName("Audio to Text").setHeading();
 
     new Setting(containerEl)
       .setName("转写服务 API Key")
@@ -541,7 +621,7 @@ class QwenAsrSettingTab extends PluginSettingTab {
         })
       );
 
-    containerEl.createEl("h3", { text: "临时文件上传" });
+    new Setting(containerEl).setName("临时文件上传").setHeading();
     containerEl.createDiv({ text: "音频会先上传到临时文件服务，再将下载地址提交给转写服务。文件到期后由上传服务自动删除。" });
 
     new Setting(containerEl)
@@ -831,7 +911,11 @@ function minuteLabel(minute: number): string {
 function formatClock(totalSeconds: number): string {
   const minutes = Math.floor(totalSeconds / 60);
   const seconds = totalSeconds % 60;
-  return `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
+  return `${formatTwoDigits(minutes)}:${formatTwoDigits(seconds)}`;
+}
+
+function formatTwoDigits(value: number): string {
+  return value < 10 ? `0${value}` : `${value}`;
 }
 
 function findTranscriptionAfterLine(editor: Editor, line: number): { startLine: number; endLine: number } | null {
