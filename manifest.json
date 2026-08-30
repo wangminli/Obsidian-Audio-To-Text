@@ -1,7 +1,7 @@
 {
-  "id": "qwen3-asr-audio-to-text",
+  "id": "audio-to-text",
   "name": "Audio to Text",
-  "version": "0.4.1",
+  "version": "0.4.2",
   "minAppVersion": "1.5.0",
   "description": "Transcribe audio embeds in Obsidian with configurable speech-to-text services.",
   "author": "wangminli",

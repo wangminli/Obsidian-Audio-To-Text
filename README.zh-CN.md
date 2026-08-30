@@ -74,12 +74,12 @@ Audio to Text 是一个 Obsidian 插件，可以将笔记中引用的音频文�
 在正式发布前，可以从项目 Release 下载预构建的 `main.js` 和 `manifest.json`，放入 Vault 的以下目录：
 
 ```text
-.obsidian/plugins/qwen3-asr-audio-to-text/
+.obsidian/plugins/audio-to-text/
 ```
 
 然后在 Obsidian 的社区插件设置中重新加载插件。
 
-如果希望一次下载压缩包，请使用同一个 Release 附带的 `Audio-to-Text-<版本>.zip`。将压缩包中的文件直接解压到 `.obsidian/plugins/qwen3-asr-audio-to-text/`，确保 `main.js` 和 `manifest.json` 直接位于该目录下，不要再套一层压缩包文件夹。然后在 **设置 → 社区插件** 中启用 **Audio to Text**。每次推送与 `manifest.json` 版本一致的标签时，GitHub Actions 都会自动生成这个压缩包。
+如果希望一次下载压缩包，请使用同一个 Release 附带的 `Audio-to-Text-<版本>.zip`。将压缩包中的文件直接解压到 `.obsidian/plugins/audio-to-text/`，确保 `main.js` 和 `manifest.json` 直接位于该目录下，不要再套一层压缩包文件夹。然后在 **设置 → 社区插件** 中启用 **Audio to Text**。每次推送与 `manifest.json` 版本一致的标签时，GitHub Actions 都会自动生成这个压缩包。
 
 ## 本地开发
 
@@ -122,4 +122,4 @@ npm run dev
 
 ## 社区发布状态
 
-项目正在准备提交 Obsidian 社区插件审核。当前插件 ID 仍为 `qwen3-asr-audio-to-text`，用于兼容已有本地安装。正式发布前，服务支持范围、错误处理、测试和发布文档仍可能继续完善。
+项目正在准备提交 Obsidian 社区插件审核。插件 ID 已调整为符合社区清单规则的 `audio-to-text`。正式发布前，服务支持范围、错误处理、测试和发布文档仍可能继续完善。

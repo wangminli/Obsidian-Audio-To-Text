@@ -74,12 +74,12 @@ After community publication, open **Settings → Community plugins** in Obsidian
 Before publication, download the prebuilt `main.js` and `manifest.json` from a project Release and place them in:
 
 ```text
-.obsidian/plugins/qwen3-asr-audio-to-text/
+.obsidian/plugins/audio-to-text/
 ```
 
 Reload the plugin from Obsidian's community plugin settings.
 
-For a one-file download, use the `Audio-to-Text-<version>.zip` asset attached to the same Release. Extract the archive directly into `.obsidian/plugins/qwen3-asr-audio-to-text/` so that `main.js` and `manifest.json` are directly inside that folder. Then enable **Audio to Text** under **Settings → Community plugins**. The archive is generated automatically whenever a matching version tag is pushed.
+For a one-file download, use the `Audio-to-Text-<version>.zip` asset attached to the same Release. Extract the archive directly into `.obsidian/plugins/audio-to-text/` so that `main.js` and `manifest.json` are directly inside that folder. Then enable **Audio to Text** under **Settings → Community plugins**. The archive is generated automatically whenever a matching version tag is pushed.
 
 ## Local development
 
@@ -111,4 +111,4 @@ Issues and pull requests are welcome. Provider integrations should keep service 
 
 ## Community publication status
 
-The project is being prepared for review as an Obsidian community plugin. The current plugin ID remains `qwen3-asr-audio-to-text` for compatibility with existing local installations. Provider coverage, error handling, tests, and release documentation may continue to evolve before publication.
+The project is being prepared for review as an Obsidian community plugin. Its plugin ID is `audio-to-text`, which follows the community manifest requirements. Provider coverage, error handling, tests, and release documentation may continue to evolve before publication.
