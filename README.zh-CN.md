@@ -114,7 +114,7 @@ npm run dev
 <table>
   <tr>
     <td align="center"><img src="https://obsidian-geekwang-image-host.oss-cn-beijing.aliyuncs.com/%E5%BE%AE%E4%BF%A1%E5%9B%BE%E7%89%87_20260830165317_168_132.jpg" alt="赞助收款码 1" width="240"></td>
-    <td align="center"><img src="https://obsidian-geekwang-image-host.oss-cn-beijing.aliyuncs.com/%E5%BE%AE%E4%BF%A1%E5%9B%BE%E7%89%87_20260827140409_163_132.jpg" alt="赞助收款码 2" width="240"></td>
+    <td align="center"><img src="https://obsidian-geekwang-image-host.oss-cn-beijing.aliyuncs.com/%E5%BE%AE%E4%BF%A1%E5%9B%BE%E7%89%87_20260830165318_169_132.jpg" alt="赞助收款码 2" width="240"></td>
   </tr>
 </table>
 
