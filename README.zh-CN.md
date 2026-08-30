@@ -107,6 +107,17 @@ npm run dev
 
 欢迎提交 Issue 和 Pull Request。新增服务适配时，请将服务配置、临时上传、请求适配、任务轮询和结果解析保持相互独立，并覆盖不同音频格式、长音频、临时上传失败和异步接口错误等场景。
 
+## 赞助支持
+
+如果这个插件对你有帮助，欢迎通过下面的收款码赞助支持后续开发：
+
+<table>
+  <tr>
+    <td align="center"><img src="https://obsidian-geekwang-image-host.oss-cn-beijing.aliyuncs.com/%E5%BE%AE%E4%BF%A1%E5%9B%BE%E7%89%87_20260830165317_168_132.jpg" alt="赞助收款码 1" width="240"></td>
+    <td align="center"><img src="https://obsidian-geekwang-image-host.oss-cn-beijing.aliyuncs.com/%E5%BE%AE%E4%BF%A1%E5%9B%BE%E7%89%87_20260827140409_163_132.jpg" alt="赞助收款码 2" width="240"></td>
+  </tr>
+</table>
+
 ## 社区发布状态
 
 项目正在准备提交 Obsidian 社区插件审核。当前插件 ID 仍为 `qwen3-asr-audio-to-text`，用于兼容已有本地安装。正式发布前，服务支持范围、错误处理、测试和发布文档仍可能继续完善。
