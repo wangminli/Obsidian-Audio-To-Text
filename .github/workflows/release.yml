@@ -1,0 +1,68 @@
+name: Build and publish release
+
+on:
+  push:
+    tags:
+      - "*.*.*"
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build plugin
+        run: npm run build
+
+      - name: Validate release version
+        id: metadata
+        shell: bash
+        run: |
+          version="$(node -p "require('./manifest.json').version")"
+          tag="${GITHUB_REF_NAME}"
+          if [[ "$version" != "$tag" ]]; then
+            echo "manifest.json version ($version) does not match tag ($tag)" >&2
+            exit 1
+          fi
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+
+      - name: Create Obsidian install archive
+        run: |
+          archive="Audio-to-Text-${{ steps.metadata.outputs.version }}.zip"
+          mkdir -p release-files
+          cp main.js manifest.json release-files/
+          (cd release-files && zip -j "../$archive" main.js manifest.json)
+          printf '%s\n' \
+            "## Audio to Text ${{ steps.metadata.outputs.version }}" \
+            "" \
+            "This release contains the Obsidian plugin assets and a ZIP archive for manual installation." \
+            "" \
+            "The default transcription model is qwen3-asr-flash-filetrans. See README.md for setup and privacy details." \
+            > release-notes.md
+
+      - name: Publish GitHub release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          archive="Audio-to-Text-${{ steps.metadata.outputs.version }}.zip"
+          gh release create "$GITHUB_REF_NAME" \
+            main.js \
+            manifest.json \
+            "$archive" \
+            --verify-tag \
+            --title "Audio to Text ${{ steps.metadata.outputs.version }}" \
+            --notes-file release-notes.md

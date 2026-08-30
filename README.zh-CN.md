@@ -79,6 +79,8 @@ Audio to Text 是一个 Obsidian 插件，可以将笔记中引用的音频文�
 
 然后在 Obsidian 的社区插件设置中重新加载插件。
 
+如果希望一次下载压缩包，请使用同一个 Release 附带的 `Audio-to-Text-<版本>.zip`。将压缩包中的文件直接解压到 `.obsidian/plugins/qwen3-asr-audio-to-text/`，确保 `main.js` 和 `manifest.json` 直接位于该目录下，不要再套一层压缩包文件夹。然后在 **设置 → 社区插件** 中启用 **Audio to Text**。每次推送与 `manifest.json` 版本一致的标签时，GitHub Actions 都会自动生成这个压缩包。
+
 ## 本地开发
 
 下面的命令只适用于修改源码或生成开发版插件的贡献者：

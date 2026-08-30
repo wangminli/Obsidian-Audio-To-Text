@@ -79,6 +79,8 @@ Before publication, download the prebuilt `main.js` and `manifest.json` from a p
 
 Reload the plugin from Obsidian's community plugin settings.
 
+For a one-file download, use the `Audio-to-Text-<version>.zip` asset attached to the same Release. Extract the archive directly into `.obsidian/plugins/qwen3-asr-audio-to-text/` so that `main.js` and `manifest.json` are directly inside that folder. Then enable **Audio to Text** under **Settings → Community plugins**. The archive is generated automatically whenever a matching version tag is pushed.
+
 ## Local development
 
 These commands are only for contributors who modify the source or create a development build:
