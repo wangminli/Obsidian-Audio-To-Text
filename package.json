@@ -1,6 +1,6 @@
 {
   "name": "obsidian-audio-to-text",
-  "version": "0.4.3",
+  "version": "0.4.4",
   "private": true,
   "description": "Transcribe Obsidian audio embeds with configurable speech-to-text services.",
   "main": "main.js",
