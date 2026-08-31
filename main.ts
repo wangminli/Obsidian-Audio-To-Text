@@ -566,7 +566,7 @@ class QwenAsrSettingTab extends PluginSettingTab {
   display(): void {
     const { containerEl } = this;
     containerEl.empty();
-    new Setting(containerEl).setName("Audio to Text").setHeading();
+    new Setting(containerEl).setName("转写服务").setHeading();
 
     new Setting(containerEl)
       .setName("转写服务 API Key")
