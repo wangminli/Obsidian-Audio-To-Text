@@ -8,7 +8,7 @@ import {
   PluginSettingTab,
   Setting,
   TFile,
-  getLanguage,
+  moment,
   requestUrl
 } from "obsidian";
 import type { MarkdownFileInfo, SettingDefinitionItem } from "obsidian";
@@ -157,24 +157,17 @@ const SETTINGS_COPY: Record<"zh" | "en", SettingsCopy> = {
 };
 
 function getSettingsCopy(): SettingsCopy {
-  try {
-    return /^zh(?:-|$)/i.test(getLanguage()) ? SETTINGS_COPY.zh : SETTINGS_COPY.en;
-  } catch {
-    // getLanguage() was added after the plugin's minimum Obsidian version.
-    return SETTINGS_COPY.en;
-  }
+  return /^zh(?:-|$)/i.test(moment.locale()) ? SETTINGS_COPY.zh : SETTINGS_COPY.en;
 }
 
 function setApiKeyDescription(setting: Setting, copy: SettingsCopy): void {
-  const description = document.createDocumentFragment();
-  description.append(copy.apiKeyDescription, " ");
-  const link = document.createElement("a");
-  link.href = BAILIAN_API_KEY_URL;
-  link.target = "_blank";
-  link.rel = "noopener noreferrer";
-  link.textContent = copy.getApiKey;
-  description.append(link);
-  setting.setDesc(description);
+  setting.setDesc(copy.apiKeyDescription);
+  setting.descEl.createSpan({ text: " " });
+  setting.descEl.createEl("a", {
+    text: copy.getApiKey,
+    href: BAILIAN_API_KEY_URL,
+    attr: { target: "_blank", rel: "noopener noreferrer" }
+  });
 }
 
 export default class QwenAsrPlugin extends Plugin {
