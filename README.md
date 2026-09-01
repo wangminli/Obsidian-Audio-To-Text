@@ -43,9 +43,10 @@ Transcript for the first minute.
 **01:00 - 02:00**
 
 Transcript for the second minute.
-
 ---
 ```
+
+![ScreenShot_2026-09-01_004218_502.png]
 
 The heading and separator follow the plugin's current Markdown output format. Existing transcripts created by older versions remain detectable for compatibility.
 
