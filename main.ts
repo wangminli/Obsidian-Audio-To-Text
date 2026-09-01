@@ -8,6 +8,7 @@ import {
   PluginSettingTab,
   Setting,
   TFile,
+  getLanguage,
   requestUrl
 } from "obsidian";
 import type { MarkdownFileInfo, SettingDefinitionItem } from "obsidian";
@@ -27,6 +28,7 @@ const DEFAULT_ENDPOINT = "https://dashscope.aliyuncs.com/api/v1/services/audio/a
 const DEFAULT_MODEL = "qwen3-asr-flash-filetrans";
 const LITTERBOX_ENDPOINT = "https://litterbox.catbox.moe/resources/internals/api.php";
 const DEFAULT_LITTERBOX_RETENTION = "24h";
+const BAILIAN_API_KEY_URL = "https://bailian.console.aliyun.com/cn-beijing?tab=model#/api-key";
 const POLL_INTERVAL_MS = 2500;
 const POLL_TIMEOUT_MS = 30 * 60 * 1000;
 const VALID_LITTERBOX_RETENTIONS = new Set<string>(["1h", "12h", "24h", "72h"]);
@@ -85,6 +87,94 @@ interface AutoTranscriptionTimer {
   editor: Editor;
   sourceFile: TFile;
   line: number;
+}
+
+interface SettingsCopy {
+  transcriptionService: string;
+  apiKey: string;
+  apiKeyDescription: string;
+  getApiKey: string;
+  model: string;
+  modelDescription: string;
+  endpoint: string;
+  endpointDescription: string;
+  language: string;
+  languageDescription: string;
+  languagePlaceholder: string;
+  autoTranscribe: string;
+  autoTranscribeDescription: string;
+  temporaryUpload: string;
+  temporaryUploadDescription: string;
+  retention: string;
+  retentionDescription: string;
+  retentionOptions: Record<string, string>;
+  privacyNotice: string;
+}
+
+const SETTINGS_COPY: Record<"zh" | "en", SettingsCopy> = {
+  zh: {
+    transcriptionService: "转写服务",
+    apiKey: "转写服务 API Key",
+    apiKeyDescription: "用于访问当前配置的语音转写服务。",
+    getApiKey: "获取 API Key",
+    model: "模型",
+    modelDescription: "当前转写服务支持的模型名称。",
+    endpoint: "接口地址",
+    endpointDescription: "当前转写服务的接口地址。",
+    language: "语言（可选）",
+    languageDescription: "例如 zh、en；留空时由模型自动识别。",
+    languagePlaceholder: "自动识别",
+    autoTranscribe: "自动转文字",
+    autoTranscribeDescription: "开启后，在编辑器中输入或粘贴音频引用时自动开始转写。",
+    temporaryUpload: "临时文件上传",
+    temporaryUploadDescription: "音频会先上传到临时文件服务，再将下载地址提交给转写服务。文件到期后由上传服务自动删除。",
+    retention: "临时文件保留时间",
+    retentionDescription: "建议选择 24 小时，给异步转写任务留出排队时间。",
+    retentionOptions: { "1h": "1 小时", "12h": "12 小时", "24h": "24 小时", "72h": "3 天" },
+    privacyNotice: "Litterbox 是第三方临时文件服务；拿到下载链接的人可以访问音频，请勿上传高度敏感或受监管内容。文件会按所选时间自动过期。"
+  },
+  en: {
+    transcriptionService: "Transcription service",
+    apiKey: "Transcription service API key",
+    apiKeyDescription: "Used to access the configured speech-to-text service.",
+    getApiKey: "Get an API key",
+    model: "Model",
+    modelDescription: "Model name supported by the configured transcription service.",
+    endpoint: "Endpoint",
+    endpointDescription: "Endpoint URL for the configured transcription service.",
+    language: "Language (optional)",
+    languageDescription: "For example, zh or en. Leave empty for automatic detection.",
+    languagePlaceholder: "Auto-detect",
+    autoTranscribe: "Transcribe automatically",
+    autoTranscribeDescription: "Start transcription automatically when an audio reference is entered or pasted in the editor.",
+    temporaryUpload: "Temporary file upload",
+    temporaryUploadDescription: "Audio is uploaded to a temporary file service before its download URL is sent to the transcription service. The upload service deletes the file after it expires.",
+    retention: "Temporary file retention",
+    retentionDescription: "24 hours is recommended to allow time for asynchronous transcription jobs to queue.",
+    retentionOptions: { "1h": "1 hour", "12h": "12 hours", "24h": "24 hours", "72h": "3 days" },
+    privacyNotice: "Litterbox is a third-party temporary file service. Anyone with the download URL may access the audio until it expires. Do not upload highly sensitive or regulated content."
+  }
+};
+
+function getSettingsCopy(): SettingsCopy {
+  try {
+    return /^zh(?:-|$)/i.test(getLanguage()) ? SETTINGS_COPY.zh : SETTINGS_COPY.en;
+  } catch {
+    // getLanguage() was added after the plugin's minimum Obsidian version.
+    return SETTINGS_COPY.en;
+  }
+}
+
+function setApiKeyDescription(setting: Setting, copy: SettingsCopy): void {
+  const description = document.createDocumentFragment();
+  description.append(copy.apiKeyDescription, " ");
+  const link = document.createElement("a");
+  link.href = BAILIAN_API_KEY_URL;
+  link.target = "_blank";
+  link.rel = "noopener noreferrer";
+  link.textContent = copy.getApiKey;
+  description.append(link);
+  setting.setDesc(description);
 }
 
 export default class QwenAsrPlugin extends Plugin {
@@ -467,15 +557,16 @@ class QwenAsrSettingTab extends PluginSettingTab {
   }
 
   getSettingDefinitions(): SettingDefinitionItem<QwenAsrSettingKey>[] {
+    const copy = getSettingsCopy();
     return [
       {
         type: "group",
-        heading: "转写服务",
+        heading: copy.transcriptionService,
         items: [
           {
-            name: "转写服务 API Key",
-            desc: "用于访问当前配置的语音转写服务。",
+            name: copy.apiKey,
             render: (setting) => {
+              setApiKeyDescription(setting, copy);
               setting.addText((text) => {
                 text.setPlaceholder("sk-...").setValue(this.plugin.settings.apiKey);
                 text.inputEl.type = "password";
@@ -487,44 +578,43 @@ class QwenAsrSettingTab extends PluginSettingTab {
             }
           },
           {
-            name: "模型",
-            desc: "当前转写服务支持的模型名称。",
+            name: copy.model,
+            desc: copy.modelDescription,
             control: { type: "text", key: "model", defaultValue: DEFAULT_MODEL, placeholder: DEFAULT_MODEL }
           },
           {
-            name: "接口地址",
-            desc: "当前转写服务的接口地址。",
+            name: copy.endpoint,
+            desc: copy.endpointDescription,
             control: { type: "text", key: "endpoint", defaultValue: DEFAULT_ENDPOINT, placeholder: DEFAULT_ENDPOINT }
           },
           {
-            name: "语言（可选）",
-            desc: "例如 zh、en；留空时由模型自动识别。",
-            control: { type: "text", key: "language", defaultValue: "", placeholder: "自动识别" }
+            name: copy.language,
+            desc: copy.languageDescription,
+            control: { type: "text", key: "language", defaultValue: "", placeholder: copy.languagePlaceholder }
           },
           {
-            name: "自动转文字",
-            desc: "开启后，在编辑器中输入或粘贴音频引用时自动开始转写。",
+            name: copy.autoTranscribe,
+            desc: copy.autoTranscribeDescription,
             control: { type: "toggle", key: "autoTranscribe", defaultValue: false }
           }
         ]
       },
       {
         type: "group",
-        heading: "临时文件上传",
+        heading: copy.temporaryUpload,
         items: [
           {
-            name: "临时文件保留时间",
-            desc: "建议选择 24 小时，给异步转写任务留出排队时间。",
+            name: copy.retention,
+            desc: copy.retentionDescription,
             control: {
               type: "dropdown",
               key: "litterboxRetention",
               defaultValue: DEFAULT_LITTERBOX_RETENTION,
-              options: { "1h": "1 小时", "12h": "12 小时", "24h": "24 小时", "72h": "3 天" }
+              options: copy.retentionOptions
             }
           },
           {
-            name: "隐私提示",
-            desc: "Litterbox 是第三方临时文件服务；拿到下载链接的人可以访问音频，请勿上传高度敏感或受监管内容。文件会按所选时间自动过期。"
+            name: copy.privacyNotice
           }
         ]
       }
@@ -565,13 +655,13 @@ class QwenAsrSettingTab extends PluginSettingTab {
 
   display(): void {
     const { containerEl } = this;
+    const copy = getSettingsCopy();
     containerEl.empty();
-    new Setting(containerEl).setName("转写服务").setHeading();
+    new Setting(containerEl).setName(copy.transcriptionService).setHeading();
 
-    new Setting(containerEl)
-      .setName("转写服务 API Key")
-      .setDesc("用于访问当前配置的语音转写服务。")
-      .addText((text) => {
+    const apiKeySetting = new Setting(containerEl).setName(copy.apiKey);
+    setApiKeyDescription(apiKeySetting, copy);
+    apiKeySetting.addText((text) => {
         text.setPlaceholder("sk-...").setValue(this.plugin.settings.apiKey);
         text.inputEl.type = "password";
         text.onChange(async (value) => {
@@ -581,8 +671,8 @@ class QwenAsrSettingTab extends PluginSettingTab {
       });
 
     new Setting(containerEl)
-      .setName("模型")
-      .setDesc("当前转写服务支持的模型名称。")
+      .setName(copy.model)
+      .setDesc(copy.modelDescription)
       .addText((text) =>
         text.setPlaceholder(DEFAULT_MODEL).setValue(this.plugin.settings.model).onChange(async (value) => {
           this.plugin.settings.model = value.trim() || DEFAULT_MODEL;
@@ -591,8 +681,8 @@ class QwenAsrSettingTab extends PluginSettingTab {
       );
 
     new Setting(containerEl)
-      .setName("接口地址")
-      .setDesc("当前转写服务的接口地址。")
+      .setName(copy.endpoint)
+      .setDesc(copy.endpointDescription)
       .addText((text) =>
         text.setPlaceholder(DEFAULT_ENDPOINT).setValue(this.plugin.settings.endpoint).onChange(async (value) => {
           this.plugin.settings.endpoint = value.trim() || DEFAULT_ENDPOINT;
@@ -601,18 +691,18 @@ class QwenAsrSettingTab extends PluginSettingTab {
       );
 
     new Setting(containerEl)
-      .setName("语言（可选）")
-      .setDesc("例如 zh、en；留空时由模型自动识别。")
+      .setName(copy.language)
+      .setDesc(copy.languageDescription)
       .addText((text) =>
-        text.setPlaceholder("自动识别").setValue(this.plugin.settings.language).onChange(async (value) => {
+        text.setPlaceholder(copy.languagePlaceholder).setValue(this.plugin.settings.language).onChange(async (value) => {
           this.plugin.settings.language = value.trim();
           await this.plugin.saveSettings();
         })
       );
 
     new Setting(containerEl)
-      .setName("自动转文字")
-      .setDesc("开启后，在编辑器中输入或粘贴音频引用时自动开始转写。")
+      .setName(copy.autoTranscribe)
+      .setDesc(copy.autoTranscribeDescription)
       .addToggle((toggle) =>
         toggle.setValue(this.plugin.settings.autoTranscribe).onChange(async (value) => {
           this.plugin.settings.autoTranscribe = value;
@@ -621,18 +711,18 @@ class QwenAsrSettingTab extends PluginSettingTab {
         })
       );
 
-    new Setting(containerEl).setName("临时文件上传").setHeading();
-    containerEl.createDiv({ text: "音频会先上传到临时文件服务，再将下载地址提交给转写服务。文件到期后由上传服务自动删除。" });
+    new Setting(containerEl).setName(copy.temporaryUpload).setHeading();
+    containerEl.createDiv({ text: copy.temporaryUploadDescription });
 
     new Setting(containerEl)
-      .setName("临时文件保留时间")
-      .setDesc("建议选择 24 小时，给异步转写任务留出排队时间。")
+      .setName(copy.retention)
+      .setDesc(copy.retentionDescription)
       .addDropdown((dropdown) => {
         dropdown
-          .addOption("1h", "1 小时")
-          .addOption("12h", "12 小时")
-          .addOption("24h", "24 小时")
-          .addOption("72h", "3 天")
+          .addOption("1h", copy.retentionOptions["1h"])
+          .addOption("12h", copy.retentionOptions["12h"])
+          .addOption("24h", copy.retentionOptions["24h"])
+          .addOption("72h", copy.retentionOptions["72h"])
           .setValue(this.plugin.settings.litterboxRetention)
           .onChange(async (value) => {
             this.plugin.settings.litterboxRetention = value;
@@ -641,7 +731,7 @@ class QwenAsrSettingTab extends PluginSettingTab {
       });
 
     const help = containerEl.createDiv({ cls: "qwen-asr-settings-warning" });
-    help.setText("Litterbox 是第三方临时文件服务；拿到下载链接的人可以访问音频，请勿上传高度敏感或受监管内容。文件会按所选时间自动过期。");
+    help.setText(copy.privacyNotice);
   }
 }
 
